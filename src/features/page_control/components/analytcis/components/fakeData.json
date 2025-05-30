@@ -1,0 +1,62 @@
+[
+  {
+    "time": "2023-10-01T00:00:00Z",
+    "food_added": 5,
+    "food_remains": 10
+  },
+  {
+    "time": "2023-10-01T08:00:00Z",
+    "food_added": 3,
+    "food_remains": 8
+  },
+  {
+    "time": "2023-10-01T16:00:00Z",
+    "food_added": 4,
+    "food_remains": 6
+  },
+  {
+    "time": "2023-10-02T06:00:00Z",
+    "food_added": 6,
+    "food_remains": 9
+  },
+  {
+    "time": "2023-10-02T14:00:00Z",
+    "food_added": 2,
+    "food_remains": 5
+  },
+  {
+    "time": "2023-10-02T20:00:00Z",
+    "food_added": 4,
+    "food_remains": 7
+  },
+  {
+    "time": "2023-10-03T07:00:00Z",
+    "food_added": 5,
+    "food_remains": 11
+  },
+  {
+    "time": "2023-10-03T15:00:00Z",
+    "food_added": 3,
+    "food_remains": 8
+  },
+  {
+    "time": "2023-10-04T09:00:00Z",
+    "food_added": 7,
+    "food_remains": 12
+  },
+  {
+    "time": "2023-10-04T17:00:00Z",
+    "food_added": 2,
+    "food_remains": 6
+  },
+  {
+    "time": "2023-10-05T08:30:00Z",
+    "food_added": 4,
+    "food_remains": 9
+  },
+  {
+    "time": "2023-10-05T19:00:00Z",
+    "food_added": 3,
+    "food_remains": 4
+  }
+]
