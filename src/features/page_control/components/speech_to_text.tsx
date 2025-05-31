@@ -4,28 +4,98 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Mic, MicOff, Volume2, Lightbulb } from "lucide-react";
+import { emojiDict } from "./emojies";
 
 function SimpleSpeechToText() {
   const [text, setText] = useState("");
   const [listening, setListening] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [lastAction, setLastAction] = useState("");
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const [emojiReaction, setEmojiReaction] = useState("");
+  const recognitionRef = useRef<any | null>(null);
   const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const checkForActions = (speech: string) => {
+  // Emoji dictionary with multiple trigger words - you can easily add more words here
+
+  const checkForEmojis = (speech: string) => {
+    const words = speech.toLowerCase().split(" ");
+    for (const word of words) {
+      // Remove punctuation and check if word exists in emoji dictionary
+      const cleanWord = word.replace(/[.,!?;]/g, "");
+      if (emojiDict[cleanWord]) {
+        setEmojiReaction(emojiDict[cleanWord]);
+        // Clear emoji after animation
+        setTimeout(() => setEmojiReaction(""), 2000);
+        break; // Only show first emoji found
+      }
+    }
+  };
+
+  const checkForActions = async (speech: string) => {
     const lowerSpeech = speech.toLowerCase();
 
-    if (
-      lowerSpeech.includes("turn") ||
-      lowerSpeech.includes("on") ||
-      lowerSpeech.includes("lights")
-    ) {
-      setLastAction("🔆 Lights turned on!");
-      // TODO: call your light control function here
-      console.log("Action triggered: Turn lights on");
+    if (lowerSpeech.includes("turn") && lowerSpeech.includes("on")) {
+      try {
+        const res = await fetch(
+          "http://localhost:3000/auth-send?message=turn_on"
+        );
+        console.log(res, "this is the response");
 
-      // Clear action message after 3 seconds
+        if (res.ok) {
+          setLastAction("🔆 Lights turned on successfully!");
+          console.log("Action triggered: Turn lights on");
+        } else {
+          setLastAction("❌ Failed to turn lights on - Server error");
+        }
+      } catch (error) {
+        console.error("Failed to send request:", error);
+        setLastAction("❌ Failed to turn lights on - Network error");
+      }
+      setTimeout(() => setLastAction(""), 3000);
+    } else if (lowerSpeech.includes("turn") && lowerSpeech.includes("off")) {
+      try {
+        const res = await fetch(
+          "http://localhost:3000/auth-send?message=turn_off"
+        );
+        console.log(res, "this is the response");
+
+        if (res.ok) {
+          setLastAction("🔅 Lights turned off successfully!");
+          console.log("Action triggered: Turn lights off");
+        } else {
+          setLastAction("❌ Failed to turn lights off - Server error");
+        }
+      } catch (error) {
+        console.error("Failed to send request:", error);
+        setLastAction("❌ Failed to turn lights off - Network error");
+      }
+      setTimeout(() => setLastAction(""), 3000);
+    } else if (
+      lowerSpeech.includes("fake") ||
+      lowerSpeech.includes("unauthorized")
+    ) {
+      try {
+        const res = await fetch(
+          "http://localhost:3000/no-auth-send?message=no_turn"
+        );
+        console.log(res, "this is the response");
+
+        if (res.ok) {
+          const responseText = await res.text();
+          console.log("Response body:", responseText);
+          setLastAction("🚫 Unauthorized access attempt detected!");
+          console.log("Action triggered: No-auth request");
+        } else {
+          const errorText = await res.text();
+          console.error("Server error response:", errorText);
+          setLastAction(
+            `❌ Failed to process unauthorized request - ${res.status}`
+          );
+        }
+      } catch (error) {
+        console.error("Failed to send request:", error);
+        setLastAction("❌ Failed to send unauthorized request - Network error");
+      }
       setTimeout(() => setLastAction(""), 3000);
     }
   };
@@ -79,6 +149,9 @@ function SimpleSpeechToText() {
       const speech = event.results[event.results.length - 1][0].transcript;
       console.log("Recognized:", speech);
       setText(speech);
+
+      // Check for emoji keywords
+      checkForEmojis(speech);
 
       // Check for action keywords
       checkForActions(speech);
@@ -160,6 +233,34 @@ function SimpleSpeechToText() {
           </div>
 
           <AnimatePresence>
+            {emojiReaction && (
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{
+                  scale: [0, 1.5, 1.2, 1],
+                  rotate: [0, 360, 0],
+                  y: [0, -10, 0],
+                }}
+                exit={{
+                  scale: 0,
+                  rotate: 180,
+                  opacity: 0,
+                }}
+                transition={{
+                  duration: 1.5,
+                  ease: "easeInOut",
+                  times: [0, 0.4, 0.7, 1],
+                }}
+                className="text-center"
+              >
+                <div className="text-6xl filter drop-shadow-lg">
+                  {emojiReaction}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
             {lastAction && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -185,7 +286,7 @@ function SimpleSpeechToText() {
           >
             <p className="text-sm whitespace-pre-wrap">
               {text ||
-                "Say 'turn lights on' or commands with 'turn', 'on', or 'lights'"}
+                "Say words like 'monkey', 'pizza', 'rocket' for emoji reactions or 'turn lights on' for actions!"}
             </p>
           </motion.div>
 
