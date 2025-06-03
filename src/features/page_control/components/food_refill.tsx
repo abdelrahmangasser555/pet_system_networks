@@ -20,6 +20,11 @@ interface BarPollProps {
   className?: string;
   onVoteChange?: (votes: VoteType[]) => void;
   disabled?: boolean;
+  full?: number;
+  current?: number;
+  containerTitle?: string;
+  containerColor?: string;
+  showPercentage?: boolean;
 }
 
 const BarPoll = ({
@@ -32,6 +37,11 @@ const BarPoll = ({
   className = "",
   onVoteChange,
   disabled = false,
+  full,
+  current,
+  containerTitle = "Container",
+  containerColor = "bg-blue-500",
+  showPercentage = true,
 }: BarPollProps) => {
   const [internalVotes, setInternalVotes] = useState<VoteType[]>([
     {
@@ -42,7 +52,22 @@ const BarPoll = ({
     },
   ]);
 
-  const votes = propVotes || internalVotes;
+  // Create container vote when full/current are provided
+  const containerVotes =
+    full !== undefined && current !== undefined
+      ? [
+          {
+            title: containerTitle,
+            votes: current,
+            variant: "default" as const,
+            color: containerColor,
+            maxVotes: full,
+          },
+        ]
+      : [];
+
+  const votes =
+    propVotes || (containerVotes.length > 0 ? containerVotes : internalVotes);
   const setVotes = propSetVotes || setInternalVotes;
 
   const handleVotesChange = (newVotes: VoteType[]) => {
@@ -50,19 +75,26 @@ const BarPoll = ({
     onVoteChange?.(newVotes);
   };
 
+  // Hide options when in container mode
+  const showOptions = full === undefined || current === undefined;
+
   return (
     <section className={`px-4 py-12 ${className}`}>
       <div
-        className={`mx-auto grid ${maxWidth} grid-cols-1 gap-2 ${gridCols} md:gap-12`}
+        className={`mx-auto grid relative ${maxWidth} grid-cols-1 gap-2 ${
+          showOptions ? gridCols : ""
+        } md:gap-12`}
       >
-        <Options
-          votes={votes}
-          setVotes={handleVotesChange}
-          title={title}
-          showResetButton={showResetButton}
-          disabled={disabled}
-        />
-        <Bars votes={votes} />
+        {showOptions && (
+          <Options
+            votes={votes}
+            setVotes={handleVotesChange}
+            title={title}
+            showResetButton={showResetButton}
+            disabled={disabled}
+          />
+        )}
+        <Bars votes={votes} isContainerMode={!showOptions} full={full} />
       </div>
     </section>
   );
@@ -146,8 +178,19 @@ const Options = ({
   );
 };
 
-const Bars = ({ votes }: { votes: VoteType[] }) => {
-  const totalVotes = votes.reduce((acc, cv) => (acc += cv.votes), 0);
+export const Bars = ({
+  votes,
+  isContainerMode = false,
+  full,
+}: {
+  votes: VoteType[];
+  isContainerMode?: boolean;
+  full?: number;
+}) => {
+  const totalVotes =
+    isContainerMode && full
+      ? full
+      : votes.reduce((acc, cv) => (acc += cv.votes), 0);
 
   return (
     <div
@@ -157,11 +200,21 @@ const Bars = ({ votes }: { votes: VoteType[] }) => {
       }}
     >
       {votes.map((vote) => {
-        const height = vote.votes
-          ? ((vote.votes / totalVotes) * 100).toFixed(2)
-          : 0;
+        const height =
+          vote.votes && totalVotes
+            ? ((vote.votes / totalVotes) * 100).toFixed(2)
+            : 0;
+
+        const displayVotes = isContainerMode
+          ? `${vote.votes}/${full}`
+          : `${vote.votes} votes`;
+
         return (
           <div key={vote.title} className="col-span-1">
+            <span className="text-xs text-slate-300 absolute right-2 top-2 z-100">
+              {height}%
+            </span>
+
             <div className="relative flex h-full w-full items-end overflow-hidden rounded-2xl bg-gradient-to-b from-slate-700 to-slate-800">
               <motion.span
                 animate={{ height: `${height}%` }}
@@ -170,10 +223,9 @@ const Bars = ({ votes }: { votes: VoteType[] }) => {
               />
               <span className="absolute bottom-0 left-[50%] mt-2 inline-block w-full -translate-x-[50%] p-2 text-center text-sm text-slate-50">
                 <b>{vote.title}</b>
-                <br></br>
-                <span className="text-xs text-slate-200">
-                  {vote.votes} votes
-                </span>
+                <br />
+                <span className="text-xs text-slate-200">{displayVotes}</span>
+                <br />
               </span>
             </div>
           </div>
@@ -184,3 +236,4 @@ const Bars = ({ votes }: { votes: VoteType[] }) => {
 };
 
 export default BarPoll;
+export { default as SingleBar } from "./single_bar";

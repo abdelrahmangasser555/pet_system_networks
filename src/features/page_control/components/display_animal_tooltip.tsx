@@ -29,9 +29,21 @@ export function DisplayAnimalTooltip({
   size = "md",
 }: DisplayAnimalTooltipProps) {
   const [animalData, setAnimalData] = useState<AnimalData | null>(null);
-  const selectedAnimal = localStorage.getItem("selectedAnimal");
+  const [isMounted, setIsMounted] = useState(false);
+  const [storageKey, setStorageKey] = useState(0);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const handleStorageChange = () => {
+      setStorageKey((prev) => prev + 1);
+    };
+
+    const selectedAnimal = localStorage.getItem("selectedAnimal");
     if (selectedAnimal) {
       try {
         const data = JSON.parse(selectedAnimal);
@@ -40,7 +52,13 @@ export function DisplayAnimalTooltip({
         console.error("Failed to parse animal data from localStorage:", error);
       }
     }
-  }, [selectedAnimal]);
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [isMounted, storageKey]);
 
   const getAnimalEmoji = (name: string) => {
     const emojiMap: { [key: string]: string } = {
