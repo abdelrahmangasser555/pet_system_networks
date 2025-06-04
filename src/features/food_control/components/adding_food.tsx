@@ -11,6 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { CookingPot, Dog } from "lucide-react";
+import { toast } from "sonner";
 
 interface AddingFoodProps {
   AddFood?: (amount: number) => void;
@@ -29,6 +30,14 @@ export function AddingFood({
 }: AddingFoodProps) {
   const handleAddFood = () => {
     AddFood?.(foodAmount[0]);
+    toast.success(`Added ${foodAmount[0]}g of food to your pet!`, {
+      icon: <Dog className="text-green-500" />,
+      duration: 3000,
+      style: {
+        background: "#f0fff4", // light green background
+        color: "#065f46", // dark green text
+      },
+    });
   };
 
   return (

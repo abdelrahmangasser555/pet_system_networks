@@ -36,11 +36,50 @@ export function useUpdateHistory() {
 
           let newHistoryItem;
 
-          // Try to parse as JSON, if it fails use as string
+          // Try to parse the ESP JSON format
           try {
-            newHistoryItem = JSON.parse(payloadString);
-          } catch {
-            // If not JSON, create an object with the raw data
+            // Fix malformed JSON from ESP - quote the time value
+            let fixedPayloadString = payloadString;
+
+            // Handle unquoted time values like: "time":00:06:05
+            fixedPayloadString = fixedPayloadString.replace(
+              /"time":(\d{2}:\d{2}:\d{2})/g,
+              '"time":"$1"'
+            );
+
+            console.log(`🔧 Fixed JSON:`, fixedPayloadString);
+            const parsedData = JSON.parse(fixedPayloadString);
+
+            // Check if it has the expected ESP format
+            if (
+              parsedData.time &&
+              typeof parsedData.food_added !== "undefined" &&
+              parsedData.food_remains
+            ) {
+              // Convert time format from "00:06:05" to ISO timestamp
+              const timeString = parsedData.time;
+              const today = new Date();
+              const [hours, minutes, seconds] = timeString
+                .split(":")
+                .map(Number);
+
+              today.setHours(hours, minutes, seconds, 0);
+
+              newHistoryItem = {
+                time: today.toISOString(),
+                food_added: parseFloat(parsedData.food_added),
+                food_remains: parseFloat(parsedData.food_remains),
+                timestamp: new Date().toISOString(),
+              };
+
+              console.log(`✅ Parsed ESP data:`, newHistoryItem);
+            } else {
+              // Fallback for other JSON formats
+              newHistoryItem = parsedData;
+            }
+          } catch (parseError) {
+            console.error("❌ JSON parsing failed:", parseError);
+            // If parsing fails completely, store as raw data
             newHistoryItem = {
               data: payloadString,
               timestamp: new Date().toISOString(),

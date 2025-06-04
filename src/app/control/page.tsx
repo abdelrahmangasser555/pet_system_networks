@@ -57,32 +57,49 @@ export default function ControlPage() {
   useUpdateHistory();
 
   useEffect(() => {
-    const selectedAnimal = localStorage.getItem("selectedAnimal");
-    if (selectedAnimal) {
-      try {
-        const data = JSON.parse(selectedAnimal);
-        setAnimalData(data);
-        setCurrentFood(data.current_food || 0);
-      } catch (error) {
-        console.error("Failed to parse animal data from localStorage:", error);
-      }
-    }
-
-    // Load food_remaining from history
-    const history = localStorage.getItem("history");
-    if (history) {
-      try {
-        const historyArray = JSON.parse(history);
-        if (Array.isArray(historyArray) && historyArray.length > 0) {
-          const lastHistoryItem = historyArray[historyArray.length - 1];
-          if (lastHistoryItem.food_remains !== undefined) {
-            setFoodRemaining(lastHistoryItem.food_remains);
-          }
+    const loadData = () => {
+      const selectedAnimal = localStorage.getItem("selectedAnimal");
+      if (selectedAnimal) {
+        try {
+          const data = JSON.parse(selectedAnimal);
+          setAnimalData(data);
+          setCurrentFood(data.current_food || 0);
+        } catch (error) {
+          console.error(
+            "Failed to parse animal data from localStorage:",
+            error
+          );
         }
-      } catch (error) {
-        console.error("Failed to parse history data from localStorage:", error);
       }
-    }
+
+      // Load food_remaining from history
+      const history = localStorage.getItem("history");
+      if (history) {
+        try {
+          const historyArray = JSON.parse(history);
+          if (Array.isArray(historyArray) && historyArray.length > 0) {
+            const lastHistoryItem = historyArray[historyArray.length - 1];
+            if (lastHistoryItem.food_remains !== undefined) {
+              setFoodRemaining(lastHistoryItem.food_remains);
+            }
+          }
+        } catch (error) {
+          console.error(
+            "Failed to parse history data from localStorage:",
+            error
+          );
+        }
+      }
+    };
+
+    // Initial load
+    loadData();
+
+    // Set up polling interval
+    const intervalId = setInterval(loadData, 2000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   const updateFoodAmount = (newAmount: number) => {
@@ -114,6 +131,7 @@ export default function ControlPage() {
             animalId: animalData?.name || "unknown",
             amount: amount,
             timestamp: new Date().toISOString(),
+            refillValue: currentFood,
           }),
         }),
       });
@@ -203,7 +221,9 @@ export default function ControlPage() {
       if (
         lowerText.includes("last") ||
         lowerText.includes("previous") ||
-        lowerText.includes("history")
+        lowerText.includes("history") ||
+        lowerText.includes("latest") ||
+        lowerText.includes("recent")
       ) {
         const history = localStorage.getItem("history");
         if (history) {
@@ -245,10 +265,10 @@ export default function ControlPage() {
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <Button className="mt-6" onClick={updateHistory}>
+      {/* <Button className="mt-6" onClick={updateHistory}>
         test update history
         <RefreshCw className="w-4 h-4 ml-2" />
-      </Button>
+      </Button> */}
       <DisplayAnimalTooltip
         className="flex items-center justify-center mb-6"
         avatarClassName="w-[200px] h-[200px] text-6xl"
