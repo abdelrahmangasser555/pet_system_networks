@@ -9,24 +9,28 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import SimpleSpeechToText from "./speech_to_text";
 
 interface AnimalData {
   name: string;
   description: string;
   default_weight: number;
   nickname?: string;
+  handleSpeech?: any;
 }
 
 interface DisplayAnimalTooltipProps {
   className?: string;
   avatarClassName?: string;
   size?: "sm" | "md" | "lg" | "xl";
+  handleSpeech?: (speech: string) => void;
 }
 
 export function DisplayAnimalTooltip({
   className,
   avatarClassName,
   size = "md",
+  handleSpeech,
 }: DisplayAnimalTooltipProps) {
   const [animalData, setAnimalData] = useState<AnimalData | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -102,17 +106,23 @@ export function DisplayAnimalTooltip({
     <div className={cn("inline-block", className)}>
       <HoverCard>
         <HoverCardTrigger asChild>
-          <Avatar
-            className={cn(
-              "cursor-pointer",
-              getSizeClasses(size),
-              avatarClassName
-            )}
-          >
-            <AvatarFallback className="bg-muted">
-              {getAnimalEmoji(animalData.name)}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar
+              className={cn(
+                "cursor-pointer shadow-lg hover:shadow-xl transition-shadow duration-200",
+                getSizeClasses(size),
+                avatarClassName
+              )}
+            >
+              <AvatarFallback className="bg-muted">
+                {getAnimalEmoji(animalData.name)}
+              </AvatarFallback>
+            </Avatar>
+            <SimpleSpeechToText
+              className="absolute bottom-5 right-2 z-10 bg-secondary rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.3)] transition-shadow duration-200"
+              handleSpeech={handleSpeech}
+            />
+          </div>
         </HoverCardTrigger>
         <HoverCardContent className="w-80">
           <div className="flex justify-between space-x-4">

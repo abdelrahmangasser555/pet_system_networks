@@ -10,6 +10,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { CookingPot, Dog } from "lucide-react";
 
 interface AddingFoodProps {
   AddFood?: (amount: number) => void;
@@ -34,7 +35,7 @@ export function AddingFood({
     <Card className="w-full ">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          🍽️ Refill Manually
+          <CookingPot /> Refill Manually
         </CardTitle>
         <CardDescription>
           Select the amount of food to add to your pet
