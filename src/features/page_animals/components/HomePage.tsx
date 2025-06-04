@@ -66,10 +66,65 @@ export default function HomePage() {
       </motion.div>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Left Sidebar - Choose Your Animal */}
+        {/* Animal Selection - First on mobile, right sidebar on desktop */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="lg:col-span-1 lg:order-2"
+        >
+          <Card className="sticky top-6">
+            <CardHeader>
+              <CardTitle className="text-2xl font-semibold text-center">
+                Choose Your Animal
+              </CardTitle>
+              <CardDescription className="text-center">
+                Select your preferred pet companion
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {selectedAnimal && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-4 bg-secondary rounded-lg border"
+                >
+                  <p className="text-secondary-foreground font-medium text-center flex items-center justify-center gap-x-2">
+                    <span className="text-2xl">
+                      {selectedAnimal === "cat" && "🐱"}
+                      {selectedAnimal === "dog" && "🐶"}
+                      {selectedAnimal === "rabbit" && "🐰"}
+                      {selectedAnimal === "hamster" && "🐹"}
+                      {selectedAnimal === "bird" && "🐦"}
+                      {selectedAnimal === "fish" && "🐟"}
+                      {selectedAnimal === "turtle" && "🐢"}
+                      {selectedAnimal === "monkey" && "🐒"}
+                      {selectedAnimal === "snake" && "🐍"}
+                    </span>
+                    Selected: {selectedAnimal}
+                  </p>
+                </motion.div>
+              )}
+              <Input
+                className="w-full"
+                placeholder="Name your animal..."
+                value={animalName}
+                onChange={(e) => setAnimalName(e.target.value)}
+              />
+              <Button
+                onClick={handleNext}
+                disabled={!selectedAnimal}
+                className="w-full"
+                size="lg"
+              >
+                Next →
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        {/* Animal Cards Grid */}
-        <div className="lg:col-span-3">
+        {/* Animal Cards Grid - Second on mobile, left side on desktop */}
+        <div className="lg:col-span-3 lg:order-1">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {animals_links.map((animal, index) => (
               <motion.div
@@ -125,61 +180,6 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="lg:col-span-1"
-        >
-          <Card className="sticky top-6">
-            <CardHeader>
-              <CardTitle className="text-2xl font-semibold text-center">
-                Choose Your Animal
-              </CardTitle>
-              <CardDescription className="text-center">
-                Select your preferred pet companion
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selectedAnimal && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="p-4 bg-secondary rounded-lg border"
-                >
-                  <p className="text-secondary-foreground font-medium text-center flex items-center justify-center gap-x-2">
-                    <span className="text-2xl">
-                      {selectedAnimal === "cat" && "🐱"}
-                      {selectedAnimal === "dog" && "🐶"}
-                      {selectedAnimal === "rabbit" && "🐰"}
-                      {selectedAnimal === "hamster" && "🐹"}
-                      {selectedAnimal === "bird" && "🐦"}
-                      {selectedAnimal === "fish" && "🐟"}
-                      {selectedAnimal === "turtle" && "🐢"}
-                      {selectedAnimal === "monkey" && "🐒"}
-                      {selectedAnimal === "snake" && "🐍"}
-                    </span>
-                    Selected: {selectedAnimal}
-                  </p>
-                </motion.div>
-              )}
-              <Input
-                className="w-full"
-                placeholder="Name your animal..."
-                value={animalName}
-                onChange={(e) => setAnimalName(e.target.value)}
-              />
-              <Button
-                onClick={handleNext}
-                disabled={!selectedAnimal}
-                className="w-full"
-                size="lg"
-              >
-                Next →
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
       </div>
     </div>
   );

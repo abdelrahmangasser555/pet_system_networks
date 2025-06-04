@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   Clock,
   ChefHat,
+  ArrowRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnimalAnalytics } from "@/features/page_control/components/analytcis/components/analyticsBoard";
@@ -103,7 +104,7 @@ export default function ControlPage() {
     return () => clearInterval(intervalId);
   }, []);
 
-  const updateFoodAmount = async (newAmount: number) => {
+  const updateFoodAmount = (newAmount: number) => {
     if (!animalData) return;
 
     const maxFood = animalData.default_weight * 1000; // Convert kg to grams
@@ -112,6 +113,12 @@ export default function ControlPage() {
     const updatedData = { ...animalData, current_food: clampedAmount };
 
     setCurrentFood(clampedAmount);
+
+    setAnimalData(updatedData);
+    localStorage.setItem("selectedAnimal", JSON.stringify(updatedData));
+  };
+
+  async function handleRefillUpdate() {
     const response = await fetch("/apis/publish", {
       method: "POST",
       headers: {
@@ -127,9 +134,11 @@ export default function ControlPage() {
         }),
       }),
     });
-    setAnimalData(updatedData);
-    localStorage.setItem("selectedAnimal", JSON.stringify(updatedData));
-  };
+
+    toast("Refill Updated", {
+      description: `Current food set to ${currentFood}g!`,
+    });
+  }
 
   const addFood = async (amount: number = foodAmount[0]) => {
     if (!animalData) return;
@@ -357,6 +366,15 @@ export default function ControlPage() {
                     disabled={currentFood >= maxFoodGrams}
                   >
                     <Plus className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRefillUpdate()}
+                    disabled={currentFood <= 0}
+                  >
+                    set
+                    <ArrowRight className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
