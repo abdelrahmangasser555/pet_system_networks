@@ -42,7 +42,7 @@ interface AnimalData {
 export default function ControlPage() {
   const [animalData, setAnimalData] = useState<AnimalData | null>(null);
   const [currentFood, setCurrentFood] = useState(0);
-  const [foodRemaining, setFoodRemaining] = useState(50);
+  const [foodRemaining, setFoodRemaining] = useState(700);
   const [foodAmount, setFoodAmount] = useState([50]);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [lastHistoryItem, setLastHistoryItem] = useState<any>(null);
@@ -57,13 +57,14 @@ export default function ControlPage() {
   useUpdateHistory();
 
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       const selectedAnimal = localStorage.getItem("selectedAnimal");
       if (selectedAnimal) {
         try {
           const data = JSON.parse(selectedAnimal);
           setAnimalData(data);
           setCurrentFood(data.current_food || 0);
+          // update the food remaining based on current food
         } catch (error) {
           console.error(
             "Failed to parse animal data from localStorage:",
@@ -102,7 +103,7 @@ export default function ControlPage() {
     return () => clearInterval(intervalId);
   }, []);
 
-  const updateFoodAmount = (newAmount: number) => {
+  const updateFoodAmount = async (newAmount: number) => {
     if (!animalData) return;
 
     const maxFood = animalData.default_weight * 1000; // Convert kg to grams
@@ -111,6 +112,21 @@ export default function ControlPage() {
     const updatedData = { ...animalData, current_food: clampedAmount };
 
     setCurrentFood(clampedAmount);
+    const response = await fetch("/apis/publish", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        topic: "dispense",
+        message: JSON.stringify({
+          animalId: animalData?.name || "unknown",
+          amount: 0,
+          timestamp: new Date().toISOString(),
+          refillValue: currentFood,
+        }),
+      }),
+    });
     setAnimalData(updatedData);
     localStorage.setItem("selectedAnimal", JSON.stringify(updatedData));
   };
