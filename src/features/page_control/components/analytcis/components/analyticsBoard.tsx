@@ -2,6 +2,7 @@
 
 import { TrendingUp, Utensils, Package, Clock } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import {
   CartesianGrid,
   Line,
@@ -31,83 +32,123 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-import fakeData from "./fakeData.json";
-
 export const description = "Pet Food Analytics Dashboard";
 
-// Process the data for charts
-const processedData = fakeData.map((item, index) => ({
-  time: new Date(item.time).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-  }),
-  food_added: item.food_added,
-  food_remains: item.food_remains,
-  food_consumed:
-    item.food_added -
-    (item.food_remains - (fakeData[index - 1]?.food_remains || 0)),
-}));
-
-// Pie chart data
-const totalFoodAdded = fakeData.reduce((sum, item) => sum + item.food_added, 0);
-const currentFoodRemains = fakeData[fakeData.length - 1].food_remains;
-const pieData = [
-  { name: "Total Added", value: totalFoodAdded, color: "var(--chart-1)" },
-  {
-    name: "Currently Remaining",
-    value: currentFoodRemains,
-    color: "var(--chart-2)",
-  },
-];
-
-// Bar chart data - daily totals
-const dailyData = fakeData.reduce((acc, item) => {
-  const date = new Date(item.time).toLocaleDateString();
-  if (!acc[date]) {
-    acc[date] = { date, food_added: 0, food_remains: 0, count: 0 };
-  }
-  acc[date].food_added += item.food_added;
-  acc[date].food_remains += item.food_remains;
-  acc[date].count += 1;
-  return acc;
-}, {} as Record<string, any>);
-
-const barChartData = Object.values(dailyData).map((day: any) => ({
-  date: new Date(day.date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  }),
-  food_added: day.food_added,
-  avg_remains: Math.round(day.food_remains / day.count),
-}));
-
-const chartConfig = {
-  food_added: {
-    label: "Food Added",
-    color: "var(--chart-1)",
-  },
-  food_remains: {
-    label: "Food Remains",
-    color: "var(--chart-2)",
-  },
-} satisfies ChartConfig;
-
 export function AnimalAnalytics() {
-  const latestData = fakeData[fakeData.length - 1];
-  const previousData = fakeData[fakeData.length - 2];
-  const trendPercentage = (
-    ((latestData.food_remains - previousData.food_remains) /
-      previousData.food_remains) *
-    100
-  ).toFixed(1);
+  const [historyData, setHistoryData] = useState<any[]>([]);
 
-  const lastFeedingTime = new Date(latestData.time).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const loadHistoryData = () => {
+    const history = localStorage.getItem("history");
+    if (history) {
+      try {
+        const data = JSON.parse(history);
+        setHistoryData(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to parse history data from localStorage:", error);
+        setHistoryData([]);
+      }
+    } else {
+      setHistoryData([]);
+    }
+  };
+
+  useEffect(() => {
+    // Load initial data
+    loadHistoryData();
+
+    // Set up polling every 2 seconds
+    const interval = setInterval(() => {
+      loadHistoryData();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Process the data for charts
+  const processedData = historyData.map((item, index) => ({
+    time: new Date(item.time).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+    }),
+    food_added: item.food_added,
+    food_remains: item.food_remains,
+    food_consumed:
+      item.food_added -
+      (item.food_remains - (historyData[index - 1]?.food_remains || 0)),
+  }));
+
+  // Pie chart data
+  const totalFoodAdded = historyData.reduce(
+    (sum, item) => sum + item.food_added,
+    0
+  );
+  const currentFoodRemains =
+    historyData.length > 0
+      ? historyData[historyData.length - 1].food_remains
+      : 0;
+  const pieData = [
+    { name: "Total Added", value: totalFoodAdded, color: "var(--chart-1)" },
+    {
+      name: "Currently Remaining",
+      value: currentFoodRemains,
+      color: "var(--chart-2)",
+    },
+  ];
+
+  // Bar chart data - daily totals
+  const dailyData = historyData.reduce((acc, item) => {
+    const date = new Date(item.time).toLocaleDateString();
+    if (!acc[date]) {
+      acc[date] = { date, food_added: 0, food_remains: 0, count: 0 };
+    }
+    acc[date].food_added += item.food_added;
+    acc[date].food_remains += item.food_remains;
+    acc[date].count += 1;
+    return acc;
+  }, {} as Record<string, any>);
+
+  const barChartData = Object.values(dailyData).map((day: any) => ({
+    date: new Date(day.date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+    food_added: day.food_added,
+    avg_remains: Math.round(day.food_remains / day.count),
+  }));
+
+  const chartConfig = {
+    food_added: {
+      label: "Food Added",
+      color: "var(--chart-1)",
+    },
+    food_remains: {
+      label: "Food Remains",
+      color: "var(--chart-2)",
+    },
+  } satisfies ChartConfig;
+
+  const latestData =
+    historyData.length > 0 ? historyData[historyData.length - 1] : null;
+  const previousData =
+    historyData.length > 1 ? historyData[historyData.length - 2] : null;
+  const trendPercentage =
+    latestData && previousData
+      ? (
+          ((latestData.food_remains - previousData.food_remains) /
+            previousData.food_remains) *
+          100
+        ).toFixed(1)
+      : "0";
+
+  const lastFeedingTime = latestData
+    ? new Date(latestData.time).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "No data";
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -118,6 +159,22 @@ export function AnimalAnalytics() {
     hidden: { scale: 0.8, opacity: 0 },
     visible: { scale: 1, opacity: 1 },
   };
+
+  if (historyData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+          <h3 className="text-lg font-medium text-muted-foreground">
+            No feeding history
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Start feeding your pet to see analytics
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -208,12 +265,12 @@ export function AnimalAnalytics() {
                 animate="visible"
                 transition={{ duration: 0.6, delay: 0.5 }}
               >
-                {latestData.food_added}g
+                {latestData?.food_added || 0}g
               </motion.div>
             </CardContent>
             <CardFooter className="text-xs text-muted-foreground">
               <p className="text-xs text-muted-foreground">
-                {latestData.food_remains}g remaining in container
+                {latestData?.food_remains || 0}g remaining in container
               </p>
             </CardFooter>
           </Card>
@@ -245,7 +302,8 @@ export function AnimalAnalytics() {
             </CardContent>
             <CardFooter className="text-xs text-muted-foreground">
               <p className="text-xs text-muted-foreground">
-                Fed {latestData.food_added}g • {latestData.food_remains}g left
+                Fed {latestData?.food_added || 0}g •{" "}
+                {latestData?.food_remains || 0}g left
               </p>
             </CardFooter>
           </Card>
