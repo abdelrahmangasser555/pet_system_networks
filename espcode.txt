@@ -1,0 +1,195 @@
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
+#include <ESP32Servo.h>
+#include <ArduinoJson.h>
+#include "esp_system.h"
+#include <ESP32Time.h>
+
+ESP32Time rtc(0);  // offset in seconds GMT+1 (we removed +1)
+
+// WiFi credentials
+const char* ssid = "Marafei access";
+const char* password = "Marafei9632";
+
+// MQTT broker
+const char* mqtt_server = "2ea6c74a7a744dfd8cbf2c79f87dcfe1.s1.eu.hivemq.cloud";
+const int mqtt_port = 8883;
+const char* mqtt_username = "gasser";
+const char* mqtt_password = "Gasser2005@";
+const char* topic_dispense = "dispense";
+const char* topic_history = "history";
+
+
+// Pins
+#define SERVO_PIN 13
+#define TOUCH_PIN 35
+
+// Objects
+WiFiClientSecure  espClient;
+PubSubClient client(espClient);
+Servo servo;
+
+// Variables
+float targetAmount = 0;
+float refill=0;
+float remainingFood = 700;
+unsigned long lastTouchCheck = 0;
+
+
+
+void setup_wifi() {
+  delay(10);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected");
+}
+
+
+//=======================================================================Function=================================================================================
+
+void reconnect() {
+// Loop until we’re reconnected
+while (!client.connected()) { 
+Serial.print("Attempting MQTT connection…");
+String clientId = "ESP8266Client-"; // Create a random client ID
+clientId += String(random(0xffff), HEX);
+// Attempt to connect
+if (client.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
+Serial.println("connected");
+
+  client.subscribe(topic_dispense);   // subscribe the topics here
+  //client.subscribe(command2_topic);   // subscribe the topics here
+} else {
+  Serial.print("failed, rc=");
+  Serial.print(client.state());
+  Serial.println(" try again in 5 seconds");   // Wait 5 seconds before retrying
+  delay(5000);
+}
+}
+}
+
+
+String getTimestamp() {
+  return rtc.getTime("%H:%M:%S");
+}
+  
+
+void dispenseFoodtouch () {
+
+  int delayTime = 10 * refill;
+
+  Serial.println("Dispensing...");
+  servo.write(60); // Open
+  delay(delayTime);     // Simulate time
+  servo.write(180); // Close
+
+  remainingFood -= refill;
+  if (remainingFood < 0) remainingFood = 0;
+
+
+  // Publish history
+  String historyMsg = "{\"time\":" + getTimestamp() + 
+                      ", \"food_added\":" + String(refill) + 
+                      ", \"food_remains\":\"" + String(remainingFood) + "\"}";
+  client.publish(topic_history, historyMsg.c_str());
+  Serial.println("Published history: " + historyMsg);
+
+  
+}
+void dispenseFoodman () {
+  int delayTime = 10 * targetAmount;
+
+  Serial.println("Dispensing...");
+  servo.write(60); // Open
+  delay(delayTime);     // Simulate time
+  servo.write(180); // Close
+
+  remainingFood -= targetAmount;
+  if (remainingFood < 0) remainingFood = 0;
+  
+
+  // Publish history
+ // Fix in ESP code
+String historyMsg = "{\"time\":\"" + getTimestamp() + 
+                    "\", \"food_added\":" + String(targetAmount) + 
+                    ", \"food_remains\":\"" + String(remainingFood) + "\"}";
+  client.publish(topic_history, historyMsg.c_str());
+  Serial.println("Published history: " + historyMsg);
+
+}
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("]: ");
+
+  // Copy payload to a String
+  String message;
+  for (unsigned int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+  Serial.println(message);
+
+  // Allocate JsonDocument
+  StaticJsonDocument<256> doc;  // Adjust size if needed
+
+  // Parse JSON
+  DeserializationError error = deserializeJson(doc, message);
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return;
+  }
+
+  // Extract amount and refillValue
+  float amount = doc["amount"] | 0.0;           // Default 0 if not present
+  float refillValue = doc["refillValue"] | 0.0; // Default 0 if not present
+
+  Serial.print("Parsed amount: ");
+  Serial.println(amount);
+  Serial.print("Parsed refillValue: ");
+  Serial.println(refillValue);
+
+  // Use extracted amount
+  targetAmount = amount;
+  refill = refillValue;
+
+  dispenseFoodman();
+}
+
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(TOUCH_PIN, INPUT);
+  servo.attach(SERVO_PIN);
+  servo.write(125);  // Closed position
+
+  setup_wifi();
+  espClient.setInsecure();  // ⚠ disables SSL cert validation (only for testing!)
+
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
+
+}
+
+void loop() {
+  if (!client.connected()) reconnect();
+  client.loop();
+
+
+  // Touch sensor check every 100 ms
+  if (millis() - lastTouchCheck > 1000) {
+    lastTouchCheck = millis();
+    if (digitalRead(TOUCH_PIN) == HIGH) {
+      Serial.println("Touch detected");
+      dispenseFoodtouch();
+    }
+  }
+
+}
