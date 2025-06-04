@@ -29,6 +29,8 @@ export default function HomePage() {
   };
 
   const handleNext = () => {
+    // clear the localStorage
+    localStorage.clear();
     if (selectedAnimal) {
       // Update localStorage with latest nickname before navigating
       const selectedAnimalData = animals_links.find(

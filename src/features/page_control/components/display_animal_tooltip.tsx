@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import SimpleSpeechToText from "./speech_to_text";
+import { Edit } from "lucide-react";
+import Link from "next/link";
 
 interface AnimalData {
   name: string;
@@ -122,6 +124,12 @@ export function DisplayAnimalTooltip({
               className="absolute bottom-5 right-2 z-10 bg-secondary rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.3)] transition-shadow duration-200"
               handleSpeech={handleSpeech}
             />
+            <Link
+              className="absolute bottom-5 left-2 z-10 bg-accent p-3 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.3)] transition-shadow duration-200"
+              href={"/"}
+            >
+              <Edit className="h-4 w-4 " />
+            </Link>
           </div>
         </HoverCardTrigger>
         <HoverCardContent className="w-80">

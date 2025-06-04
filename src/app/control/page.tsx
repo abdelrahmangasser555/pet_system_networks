@@ -89,7 +89,7 @@ export default function ControlPage() {
     if (!animalData) return;
 
     const maxFood = animalData.default_weight * 1000; // Convert kg to grams
-    const clampedAmount = Math.max(0, Math.min(newAmount, maxFood));
+    const clampedAmount = Math.max(0, Math.min(newAmount, maxFood)); // Clamp between 0 and maxFood
 
     const updatedData = { ...animalData, current_food: clampedAmount };
 
